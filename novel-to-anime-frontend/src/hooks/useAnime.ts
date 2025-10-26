@@ -12,13 +12,35 @@ export const useAnime = () => {
       dispatch({ type: 'SET_LOADING', payload: true });
       dispatch({ type: 'SET_ERROR', payload: null });
 
+      // First check if task exists and get its status
+      const taskInfo = await TaskService.getTask(taskId);
+      
+      // If task is not done, show appropriate message
+      if (taskInfo.status !== 'done') {
+        const statusMessage = taskInfo.status === 'doing' 
+          ? '任务正在处理中，请稍后再试' 
+          : '任务尚未完成';
+        dispatch({ type: 'SET_ERROR', payload: statusMessage });
+        return null;
+      }
+
+      // Try to load artifacts
       const animeData = await TaskService.getTaskArtifacts(taskId);
       dispatch({ type: 'SET_ANIME_DATA', payload: animeData });
 
       return animeData;
     } catch (error) {
       const apiError = handleApiError(error);
-      dispatch({ type: 'SET_ERROR', payload: apiError.message });
+      
+      // Provide more specific error messages
+      let errorMessage = apiError.message;
+      if (apiError.status === 404) {
+        errorMessage = '项目不存在或已被删除';
+      } else if (apiError.status === 500) {
+        errorMessage = '服务器错误，请稍后重试';
+      }
+      
+      dispatch({ type: 'SET_ERROR', payload: errorMessage });
       throw apiError;
     } finally {
       dispatch({ type: 'SET_LOADING', payload: false });

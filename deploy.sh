@@ -65,13 +65,16 @@ if [ "$DEPLOYMENT_MODE" = "k8s" ]; then
     if [ ! -d "dist" ]; then
         echo "  安装依赖..."
         npm install > /dev/null 2>&1
-        echo "  构建前端..."
-        npm run build > /dev/null 2>&1
-        if [ $? -ne 0 ]; then
-            echo "❌ 前端构建失败"
-            cd ..
-            exit 1
-        fi
+    fi
+    
+    # 为 K8s 构建（使用空 API_BASE_URL，让前端使用相对路径）
+    echo "  构建前端（使用 nginx 反向代理）..."
+    rm -rf dist
+    VITE_API_BASE_URL='' npm run build > /dev/null 2>&1
+    if [ $? -ne 0 ]; then
+        echo "❌ 前端构建失败"
+        cd ..
+        exit 1
     fi
     
     echo "  构建 Docker 镜像..."

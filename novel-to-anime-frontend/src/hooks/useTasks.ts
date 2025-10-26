@@ -78,14 +78,21 @@ export const useTasks = () => {
         createdAt: new Date(), // API doesn't provide creation time
       };
 
+      // Update the task in the tasks list
       dispatch({ type: 'UPDATE_TASK', payload: { id, status: response.status, statusDesc: response.statusDesc } });
+      
+      // Set as current task if not already set or if it's a different task
+      if (!state.currentTask || state.currentTask.id !== id) {
+        dispatch({ type: 'SET_CURRENT_TASK', payload: task });
+      }
+      
       return task;
     } catch (error) {
       const apiError = handleApiError(error);
       dispatch({ type: 'SET_ERROR', payload: apiError.message });
       throw apiError;
     }
-  }, [dispatch]);
+  }, [dispatch, state.currentTask]);
 
   // Set current task
   const setCurrentTask = useCallback((task: Task | null) => {

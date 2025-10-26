@@ -35,12 +35,17 @@ export const AnimeViewer = ({ taskId }: AnimeViewerProps) => {
 
   // Load anime data when component mounts or taskId changes
   useEffect(() => {
-    if (taskId && currentTask?.status === 'done') {
+    if (taskId) {
+      // Try to load anime data regardless of currentTask status
+      // This handles the case when user refreshes the page directly
       loadAnimeData(taskId).then(() => {
         setHasInitialized(true);
+      }).catch((error) => {
+        console.error('Failed to load anime data:', error);
+        // If loading fails, we'll show the error state
       });
     }
-  }, [taskId, currentTask?.status, loadAnimeData]);
+  }, [taskId, loadAnimeData]);
 
   // Save auto-play preference when it changes
   useEffect(() => {
@@ -153,6 +158,9 @@ export const AnimeViewer = ({ taskId }: AnimeViewerProps) => {
   }
 
   if (error) {
+    const isTaskProcessing = error.includes('处理中');
+    const isTaskNotComplete = error.includes('尚未完成');
+    
     return (
       <div style={{
         height: '100vh',
@@ -173,26 +181,39 @@ export const AnimeViewer = ({ taskId }: AnimeViewerProps) => {
           <div style={{
             width: '48px',
             height: '48px',
-            backgroundColor: '#fee2e2',
+            backgroundColor: isTaskProcessing ? '#fef3c7' : '#fee2e2',
             borderRadius: '50%',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             margin: '0 auto 24px'
           }}>
-            <svg style={{ width: '24px', height: '24px', color: '#dc2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-            </svg>
+            {isTaskProcessing ? (
+              <svg style={{ width: '24px', height: '24px', color: '#d97706' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            ) : (
+              <svg style={{ width: '24px', height: '24px', color: '#dc2626' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+            )}
           </div>
           <h3 style={{ fontSize: '18px', fontWeight: '600', color: '#111827', margin: '0 0 8px 0' }}>
-            Failed to load anime content
+            {isTaskProcessing ? '任务处理中' : isTaskNotComplete ? '任务未完成' : '加载失败'}
           </h3>
           <p style={{ fontSize: '14px', color: '#6b7280', margin: '0 0 24px 0' }}>
             {error}
           </p>
-          <Button onClick={() => loadAnimeData(taskId)} size="sm" variant="secondary">
-            Try Again
-          </Button>
+          <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+            <Button onClick={() => navigate('/')} size="sm" variant="secondary">
+              返回首页
+            </Button>
+            {!isTaskProcessing && (
+              <Button onClick={() => loadAnimeData(taskId)} size="sm" variant="primary">
+                重试
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     );
